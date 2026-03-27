@@ -4,7 +4,7 @@ const siteUrl = 'https://ae.elouanb7.com';
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Calculateur Auto-Entrepreneur 2025 - Simulez votre revenu net freelance',
+  title: 'Calculateur Auto-Entrepreneur 2026 - Simulez votre revenu net freelance',
   description: 'Simulateur gratuit pour auto-entrepreneurs : calculez votre revenu net, cotisations sociales, impôts (versement libératoire ou IR), ACRE, charges et frais professionnels en temps réel.',
   keywords: ['auto-entrepreneur', 'simulateur', 'calculateur', 'freelance', 'micro-entreprise', 'cotisations sociales', 'versement libératoire', 'ACRE', 'TJM', 'revenu net'],
   authors: [{ name: 'Elouan B.', url: 'https://elouanb7.com' }],
@@ -12,7 +12,7 @@ export const metadata = {
     canonical: siteUrl,
   },
   openGraph: {
-    title: 'Calculateur Auto-Entrepreneur 2025 - Simulez votre revenu net',
+    title: 'Calculateur Auto-Entrepreneur 2026 - Simulez votre revenu net',
     description: 'Simulateur gratuit : calculez votre revenu net auto-entrepreneur avec cotisations, impôts, ACRE et frais professionnels.',
     type: 'website',
     locale: 'fr_FR',
@@ -21,7 +21,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Calculateur Auto-Entrepreneur 2025',
+    title: 'Calculateur Auto-Entrepreneur 2026',
     description: 'Simulez votre revenu net freelance en temps réel : TJM, cotisations, impôts, ACRE.',
   },
   robots: {

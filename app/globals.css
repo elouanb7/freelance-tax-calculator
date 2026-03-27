@@ -5,10 +5,57 @@
   --font-heading: 'Syne', sans-serif;
 }
 
+/* ─── Light theme: Ink & Paper ─── */
+:root {
+  --bg: #f5f2eb;
+  --card-bg: #fffef9;
+  --card-border: #d8d3c8;
+  --title: #111111;
+  --subtitle: #555249;
+  --accent: #1e3a5f;
+  --accent-light: #e8edf3;
+  --accent-hover: #2b4f7a;
+  --kpi-positive: #1a6b4a;
+  --kpi-negative: #9b2c2c;
+  --input-border: #c5bfb3;
+  --input-bg: #fffef9;
+  --shadow: 0 2px 8px rgba(17,17,17,0.07);
+  --shadow-hover: 0 8px 20px rgba(17,17,17,0.10);
+  --range-track: #d8d3c8;
+  --checkbox-border: #c5bfb3;
+}
+
+/* ─── Dark theme: Charcoal Night + Bleu glacier ─── */
+[data-theme="dark"] {
+  --bg: #141414;
+  --card-bg: #1f1f1f;
+  --card-border: #2e2e2e;
+  --title: #ececec;
+  --subtitle: #999999;
+  --accent: #60a5fa;
+  --accent-light: #111827;
+  --accent-hover: #93c5fd;
+  --kpi-positive: #4ade80;
+  --kpi-negative: #fca5a5;
+  --input-border: #3a3a3a;
+  --input-bg: #171717;
+  --shadow: 0 4px 16px rgba(0,0,0,0.45);
+  --shadow-hover: 0 8px 24px rgba(0,0,0,0.55);
+  --range-track: #3a3a3a;
+  --checkbox-border: #3a3a3a;
+}
+
 h1, h2, h3, button {
   font-family: var(--font-heading);
 }
 
+body {
+  background: var(--bg);
+  color: var(--title);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Range slider ─── */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -23,9 +70,9 @@ input[type="range"]::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: var(--accent);
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--accent) 40%, transparent);
   transition: all 0.2s ease;
   position: relative;
   margin-top: -7px;
@@ -33,7 +80,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
@@ -46,26 +93,27 @@ input[type="range"]::-webkit-slider-runnable-track {
   background: transparent;
 }
 
+/* ─── Checkbox ─── */
 input[type="checkbox"] {
   appearance: none;
   width: 22px;
   height: 22px;
-  border: 2.5px solid #c4b5fd;
+  border: 2.5px solid var(--checkbox-border);
   border-radius: 6px;
-  background: white;
+  background: var(--input-bg);
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
 }
 
 input[type="checkbox"]:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  border-color: #8b5cf6;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 input[type="checkbox"]:checked::after {
@@ -80,6 +128,11 @@ input[type="checkbox"]:checked::after {
   transform: rotate(45deg);
 }
 
+[data-theme="dark"] input[type="checkbox"]:checked::after {
+  border-color: #141414;
+}
+
+/* ─── Cards ─── */
 .card-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-transform: translateZ(0);
@@ -88,12 +141,13 @@ input[type="checkbox"]:checked::after {
 
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(139, 92, 246, 0.12);
+  box-shadow: var(--shadow-hover);
 }
 
-/* Fix backdrop-blur white square artefact on scroll (WebKit) */
-.glass-card {
-  background: rgba(255, 255, 255, 0.92);
+.theme-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   -webkit-transform: translateZ(0);
