@@ -153,3 +153,8 @@ input[type="checkbox"]:checked::after {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

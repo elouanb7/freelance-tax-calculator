@@ -293,6 +293,67 @@ export default function CalculateurAutoEntrepreneur() {
 
   const supprimerFrais = (id) => setFraisCustom(fraisCustom.filter(f => f.id !== id));
 
+  const buildCSVLines = () => [
+    ['Simulateur Auto-Entrepreneur - Rapport'],
+    ['G\u00e9n\u00e9r\u00e9 le', new Date().toLocaleDateString('fr-FR')],
+    [],
+    ['PARAM\u00c8TRES'],
+    ['Mode', useCA ? 'CA mensuel' : 'TJM + Jours'],
+    ...(!useCA ? [['TJM', tjm], ['Jours travaill\u00e9s/an', joursCalcules]] : [['CA mensuel', caMensuel]]),
+    ['Versement lib\u00e9ratoire', versementLiberatoire ? 'Oui' : 'Non'],
+    ['ACRE', avecACRE ? `Oui (${moisACRE} mois)` : 'Non'],
+    [],
+    ['R\u00c9SUM\u00c9 ANNUEL'],
+    ['', 'Annuel', 'Mensuel'],
+    ['Chiffre d\'affaires', Math.round(calculs.caAnnuel), Math.round(calculs.caMensuel)],
+    ['Cotisations sociales', Math.round(calculs.cotisations), Math.round(calculs.cotisations / 12)],
+    ['Imp\u00f4ts', Math.round(calculs.impots), Math.round(calculs.impots / 12)],
+    ['Total charges', Math.round(calculs.totalCharges), Math.round(calculs.totalCharges / 12)],
+    ['Total frais', Math.round(calculs.totalFrais), Math.round(calculs.totalFrais / 12)],
+    ['Net final', Math.round(calculs.netFinal), Math.round(calculs.netMensuel)],
+    ['Taux de charges', ((calculs.totalCharges / calculs.caAnnuel) * 100).toFixed(1) + '%'],
+    [],
+    ['D\u00c9TAIL CHARGES'],
+    ['Poste', 'Annuel', 'Mensuel'],
+    ['Cotisations sociales', Math.round(calculs.cotisations), Math.round(calculs.cotisations / 12)],
+    ['Imp\u00f4ts', Math.round(calculs.impots), Math.round(calculs.impots / 12)],
+    ['Mutuelle', Math.round(calculs.mutuelleAnnuelle), mutuelle],
+    ['Pr\u00e9voyance', Math.round(calculs.prevoyanceAnnuelle), prevoyance],
+    ['RC Pro', calculs.rcPro, Math.round(calculs.rcPro / 12)],
+    ['CFE', calculs.cfe, Math.round(calculs.cfe / 12)],
+    ['Frais professionnels', Math.round((fraisPros || 0) * 12), fraisPros],
+    ...fraisCustom.map(f => [f.nom, f.periode === 'an' ? f.montant : Math.round(f.montant * 12), f.periode === 'an' ? Math.round(f.montant / 12) : f.montant]),
+    [],
+    ['SC\u00c9NARIOS'],
+    [useCA ? 'Variation' : 'Jours/an', 'CA annuel', 'CA mensuel', 'Net annuel', 'Net mensuel', ...(!useCA ? ['Jours repos'] : [])],
+    ...scenarios.map(s => [s.label, Math.round(s.ca), Math.round(s.caMensuel), Math.round(s.net), Math.round(s.netMensuel), ...(!useCA ? [s.joursOff] : [])]),
+    [],
+    ['Ajoutez vos propres lignes ci-dessous'],
+  ];
+
+  const downloadCSV = () => {
+    const bom = '\uFEFF';
+    const csv = bom + buildCSVLines().map(row => row.join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `simulateur-ae-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const copyAndOpen = (url) => {
+    const tsv = buildCSVLines().map(row => row.join('\t')).join('\n');
+    navigator.clipboard.writeText(tsv);
+    setExportToast(true);
+    setTimeout(() => setExportToast(false), 4000);
+    window.open(url, '_blank');
+  };
+
+  const [showExport, setShowExport] = useState(false);
+  const [exportToast, setExportToast] = useState(false);
+
   const fmt = (v) => Math.round(v).toLocaleString('fr-FR');
 
   const tooltipStyle = {
@@ -322,8 +383,72 @@ export default function CalculateurAutoEntrepreneur() {
             </h1>
             <p className="text-lg" style={{ color: 'var(--subtitle)' }}>Simule ton revenu net en temps r&eacute;el</p>
           </div>
-          <ThemeToggle dark={dark} setDark={setDark} />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowExport(!showExport)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all card-hover cursor-pointer text-sm font-semibold"
+                style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: 'var(--shadow)', color: 'var(--accent)' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span className="hidden sm:inline">Exporter</span>
+              </button>
+              {showExport && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowExport(false)} />
+                  <div className="absolute right-0 mt-2 z-20 rounded-xl overflow-hidden w-[260px]" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: 'var(--shadow-hover)' }}>
+                    {[
+                      { label: 'T\u00e9l\u00e9charger en CSV', onClick: () => { downloadCSV(); setShowExport(false); }, hoverBg: dark ? '#1e293b' : '#e8edf3', darkHoverBg: '#1e293b', icon: (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      ), labelColor: 'var(--accent)' },
+                      { label: 'Google Sheets', onClick: () => { copyAndOpen('https://sheets.new'); setShowExport(false); }, hoverBg: '#ecfdf5', darkHoverBg: '#0d2818', icon: (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#23A566"/>
+                          <path d="M14 2v6h6" fill="#1C8B53"/>
+                          <rect x="7" y="12" width="10" height="2" rx="0.5" fill="white"/>
+                          <rect x="7" y="15" width="10" height="2" rx="0.5" fill="white"/>
+                          <rect x="11" y="12" width="1.5" height="5" fill="#23A566"/>
+                        </svg>
+                      ), labelColor: '#0F9D58' },
+                      { label: 'Excel Online', onClick: () => { copyAndOpen('https://excel.new'); setShowExport(false); }, hoverBg: '#f0fdf4', darkHoverBg: '#0a1f14', icon: (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#1D6F42"/>
+                          <path d="M14 2v6h6" fill="#16593A"/>
+                          <path d="M8.5 18L10.8 14.5L8.7 11H10.5L11.7 13.2L12.9 11H14.7L12.6 14.4L15 18H13.1L11.7 15.6L10.3 18H8.5Z" fill="white"/>
+                        </svg>
+                      ), labelColor: '#185C37' },
+                    ].map(({ label, onClick, icon, labelColor, hoverBg, darkHoverBg }, i) => (
+                      <div key={label}>
+                        {i > 0 && <div style={{ borderTop: '1px solid var(--card-border)' }} />}
+                        <button onClick={onClick} className="w-full text-left px-4 py-3.5 text-sm font-semibold cursor-pointer transition-all flex items-center gap-3 whitespace-nowrap" style={{ color: labelColor }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = dark ? darkHoverBg : hoverBg}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                          <span className="w-[20px] h-[20px] shrink-0 flex items-center justify-center">{icon}</span>
+                          {label}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <ThemeToggle dark={dark} setDark={setDark} />
+          </div>
         </header>
+
+        {exportToast && (
+          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-lg flex items-center gap-2 animate-[fadeIn_0.2s_ease]"
+            style={{ background: 'var(--accent)', color: 'white' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Donn&eacute;es copi&eacute;es — collez avec Ctrl+V dans le tableur
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ═══ PANEL CONFIGURATION ═══ */}
