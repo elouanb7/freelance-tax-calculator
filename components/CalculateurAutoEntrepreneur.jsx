@@ -177,6 +177,15 @@ function RangeSlider({ min, max, value, onChange, ariaLabel }) {
 
 export default function CalculateurAutoEntrepreneur() {
   const [dark, setDark] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    setIsMobile(mq.matches);
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const [tjm, setTjm] = useState(300);
   const [joursAnnuels, setJoursAnnuels] = useState(180);
   const [joursMensuels, setJoursMensuels] = useState(15);
@@ -707,15 +716,14 @@ export default function CalculateurAutoEntrepreneur() {
             {/* Camembert */}
             <Card className="p-4 sm:p-6">
               <CardTitle>R&eacute;partition du CA annuel</CardTitle>
-              {/* Desktop */}
-              <div className="hidden sm:block">
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} cx="40%" cy="50%" labelLine={false} label={({ percent }) => percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} outerRadius={110} innerRadius={50} dataKey="value" style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: 14 }}>
-                        {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke={dark ? '#1f1f1f' : '#fffef9'} strokeWidth={2} />)}
-                      </Pie>
-                      <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={tooltipStyle} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} />
+              <div className={isMobile ? '' : 'h-[350px]'} style={isMobile ? { height: 250 } : undefined}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx={isMobile ? '50%' : '40%'} cy="50%" labelLine={false} label={({ percent }) => percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} outerRadius={isMobile ? 85 : 110} innerRadius={isMobile ? 40 : 50} dataKey="value" style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>
+                      {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke={dark ? '#1f1f1f' : '#fffef9'} strokeWidth={2} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={tooltipStyle} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} />
+                    {!isMobile && (
                       <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle"
                         wrapperStyle={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 13, paddingLeft: '20px' }}
                         formatter={(value, entry) => {
@@ -725,22 +733,11 @@ export default function CalculateurAutoEntrepreneur() {
                           return <span style={{ color: dark ? '#ececec' : '#111' }}>{value} <span style={{ color: dark ? '#999' : '#555', fontSize: 12 }}>({pct}% &bull; {fmt(iv)}&euro;)</span></span>;
                         }}
                       />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                    )}
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              {/* Mobile */}
-              <div className="sm:hidden">
-                <div className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" labelLine={false} label={({ percent }) => percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} outerRadius={85} innerRadius={40} dataKey="value" style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: 12 }}>
-                        {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke={dark ? '#1f1f1f' : '#fffef9'} strokeWidth={2} />)}
-                      </Pie>
-                      <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={{ ...tooltipStyle, padding: '8px' }} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+              {isMobile && (
                 <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
                   {pieData.map((item) => {
                     const total = pieData.reduce((s, i) => s + i.value, 0);
@@ -754,7 +751,7 @@ export default function CalculateurAutoEntrepreneur() {
                     );
                   })}
                 </div>
-              </div>
+              )}
             </Card>
 
             {/* D\u00e9tail charges */}
