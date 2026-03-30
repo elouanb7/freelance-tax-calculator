@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { calculerNet } from '../lib/calculs';
+import { calculerNet, ACTIVITES } from '../lib/calculs';
 
 const JOURS_OUVRABLES_AN = 261;
 const JOURS_OUVRABLES_MOIS = 22;
@@ -186,6 +186,7 @@ export default function CalculateurAutoEntrepreneur() {
   const [joursReposMensuels, setJoursReposMensuels] = useState(7);
   const [useCA, setUseCA] = useState(false);
   const [caMensuel, setCAMensuel] = useState(4500);
+  const [activite, setActivite] = useState('bnc');
   const [versementLiberatoire, setVersementLiberatoire] = useState(true);
   const [avecACRE, setAvecACRE] = useState(false);
   const [moisACRE, setMoisACRE] = useState(10);
@@ -206,7 +207,7 @@ export default function CalculateurAutoEntrepreneur() {
   }, [dark]);
 
   const colors = dark ? DARK_COLORS : LIGHT_COLORS;
-  const chargesParams = { versementLiberatoire, avecACRE, moisACRE, cfe, mutuelle, prevoyance, rcPro, fraisPros, fraisCustom };
+  const chargesParams = { versementLiberatoire, avecACRE, moisACRE, cfe, mutuelle, prevoyance, rcPro, fraisPros, fraisCustom, activite };
 
   const joursCalcules = useMemo(() => {
     if (modeRepos) {
@@ -231,7 +232,7 @@ export default function CalculateurAutoEntrepreneur() {
       joursNonPayes: useCA ? 0 : (JOURS_OUVRABLES_AN - joursCalcules),
       joursCalcules,
     };
-  }, [tjm, joursCalcules, useCA, caMensuel, versementLiberatoire, avecACRE, moisACRE, mutuelle, prevoyance, rcPro, cfe, fraisPros, fraisCustom]);
+  }, [tjm, joursCalcules, useCA, caMensuel, versementLiberatoire, avecACRE, moisACRE, mutuelle, prevoyance, rcPro, cfe, fraisPros, fraisCustom, activite]);
 
   const scenarios = useMemo(() => {
     if (useCA) {
@@ -259,7 +260,7 @@ export default function CalculateurAutoEntrepreneur() {
         joursOff: JOURS_OUVRABLES_AN - jours,
       };
     });
-  }, [tjm, joursCalcules, useCA, caMensuel, versementLiberatoire, avecACRE, moisACRE, mutuelle, prevoyance, rcPro, cfe, fraisPros, fraisCustom]);
+  }, [tjm, joursCalcules, useCA, caMensuel, versementLiberatoire, avecACRE, moisACRE, mutuelle, prevoyance, rcPro, cfe, fraisPros, fraisCustom, activite]);
 
   const pieData = [
     { name: 'Cotisations sociales', value: calculs.cotisations, color: colors.charges[0] },
@@ -273,8 +274,8 @@ export default function CalculateurAutoEntrepreneur() {
   ];
 
   const detailCharges = [
-    { label: `Cotisations sociales ${avecACRE ? '(avec ACRE)' : '(21,2%)'}`, value: calculs.cotisations, color: colors.charges[0] },
-    { label: `Imp\u00f4ts ${versementLiberatoire ? '(VL 2,2%)' : '(IR)'}`, value: calculs.impots, color: colors.charges[1] },
+    { label: `Cotisations sociales ${avecACRE ? '(avec ACRE)' : `(${(ACTIVITES[activite].tauxCotis * 100).toFixed(1).replace('.', ',')}%)`}`, value: calculs.cotisations, color: colors.charges[0] },
+    { label: `Imp\u00f4ts ${versementLiberatoire ? `(VL ${(ACTIVITES[activite].tauxVL * 100).toFixed(1).replace('.', ',')}%)` : '(IR)'}`, value: calculs.impots, color: colors.charges[1] },
     { label: `Mutuelle (${mutuelle}\u20AC/mois)`, value: calculs.mutuelleAnnuelle, color: colors.charges[2] },
     { label: `Pr\u00e9voyance (${prevoyance}\u20AC/mois)`, value: calculs.prevoyanceAnnuelle, color: colors.charges[3] },
     { label: 'RC Pro', value: calculs.rcPro, color: colors.charges[4] },
@@ -298,10 +299,13 @@ export default function CalculateurAutoEntrepreneur() {
     ['G\u00e9n\u00e9r\u00e9 le', new Date().toLocaleDateString('fr-FR')],
     [],
     ['PARAM\u00c8TRES'],
+    ['Type d\'activit\u00e9', ACTIVITES[activite].label],
     ['Mode', useCA ? 'CA mensuel' : 'TJM + Jours'],
     ...(!useCA ? [['TJM', tjm], ['Jours travaill\u00e9s/an', joursCalcules]] : [['CA mensuel', caMensuel]]),
-    ['Versement lib\u00e9ratoire', versementLiberatoire ? 'Oui' : 'Non'],
-    ['ACRE', avecACRE ? `Oui (${moisACRE} mois)` : 'Non'],
+    ['Versement lib\u00e9ratoire', versementLiberatoire ? `Oui (${(ACTIVITES[activite].tauxVL * 100).toFixed(1)}%)` : 'Non (IR bar\u00e8me progressif)'],
+    ['Abattement forfaitaire', `${Math.round(ACTIVITES[activite].abattement * 100)}%`],
+    ['Taux cotisations', `${(ACTIVITES[activite].tauxCotis * 100).toFixed(1)}%`],
+    ['ACRE', avecACRE ? `Oui (${moisACRE} mois, taux r\u00e9duit ${(ACTIVITES[activite].tauxCotisACRE * 100).toFixed(1)}%)` : 'Non'],
     [],
     ['R\u00c9SUM\u00c9 ANNUEL'],
     ['', 'Annuel', 'Mensuel'],
@@ -528,10 +532,26 @@ export default function CalculateurAutoEntrepreneur() {
             {/* Options fiscales */}
             <Card>
               <CardTitle>Options fiscales</CardTitle>
-              <label className="flex items-center gap-3 mb-4 cursor-pointer">
+
+              <Label>Type d&apos;activit&eacute;</Label>
+              <div className="flex flex-col gap-2 mb-5">
+                {Object.entries(ACTIVITES).map(([key, { label }]) => (
+                  <SmallToggle key={key} active={activite === key} onClick={() => setActivite(key)}>{label}</SmallToggle>
+                ))}
+              </div>
+
+              <label className="flex items-center gap-3 mb-2 cursor-pointer">
                 <input type="checkbox" checked={versementLiberatoire} onChange={(e) => setVersementLiberatoire(e.target.checked)} />
-                <span className="font-medium" style={{ color: 'var(--title)' }}>Versement lib&eacute;ratoire (2,2%)</span>
+                <span className="font-medium" style={{ color: 'var(--title)' }}>
+                  Versement lib&eacute;ratoire ({(ACTIVITES[activite].tauxVL * 100).toFixed(1).replace('.', ',')}%)
+                </span>
               </label>
+              <div className="text-xs mb-4 pl-[34px]" style={{ color: 'var(--subtitle)' }}>
+                {versementLiberatoire
+                  ? `Pr\u00e9l\u00e8vement forfaitaire de ${(ACTIVITES[activite].tauxVL * 100).toFixed(1).replace('.', ',')}% sur le CA`
+                  : `Imp\u00f4t sur le revenu classique (bar\u00e8me progressif, abattement ${Math.round(ACTIVITES[activite].abattement * 100)}%)`
+                }
+              </div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={avecACRE} onChange={(e) => setAvecACRE(e.target.checked)} />
                 <span className="font-medium" style={{ color: 'var(--title)' }}>ACRE</span>
