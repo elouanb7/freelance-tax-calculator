@@ -9,7 +9,7 @@ const JOURS_OUVRABLES_MOIS = 22;
 
 // Palette cohérente pour les pie/bar charts
 const LIGHT_COLORS = {
-  charges: ['#1e3a5f', '#2b4f7a', '#3d6a9e', '#5a8ab8', '#7ba8cc', '#9ec4dd', '#c3dceb'],
+  charges: ['#1e3a5f', '#27466e', '#2b4f7a', '#3d6a9e', '#5a8ab8', '#7ba8cc', '#9ec4dd', '#c3dceb'],
   positive: '#1a6b4a',
   negative: '#9b2c2c',
   accent: '#1e3a5f',
@@ -21,7 +21,7 @@ const LIGHT_COLORS = {
   barNet: ['#3daa75', '#1a6b4a'],
 };
 const DARK_COLORS = {
-  charges: ['#60a5fa', '#4b8fe0', '#3b7cc8', '#6bb5ff', '#93c5fd', '#b0d4fd', '#d0e6fe'],
+  charges: ['#60a5fa', '#549ae8', '#4b8fe0', '#3b7cc8', '#6bb5ff', '#93c5fd', '#b0d4fd', '#d0e6fe'],
   positive: '#4ade80',
   negative: '#fca5a5',
   accent: '#60a5fa',
@@ -81,6 +81,37 @@ function SmallToggle({ active, onClick, children }) {
     >
       {children}
     </button>
+  );
+}
+
+function PeriodToggle({ value, onChange }) {
+  const opt = (key, label) => (
+    <button
+      key={key}
+      onClick={() => onChange(key)}
+      className="px-3 py-1 text-xs font-semibold transition-all cursor-pointer"
+      style={value === key
+        ? { background: 'var(--accent)', color: 'white' }
+        : { background: 'transparent', color: 'var(--subtitle)' }
+      }
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="inline-flex rounded-lg overflow-hidden shrink-0" style={{ boxShadow: 'inset 0 0 0 1px var(--card-border)' }}>
+      {opt('an', 'Annuel')}
+      {opt('mois', 'Mensuel')}
+    </div>
+  );
+}
+
+function ChartHeader({ title, period, onPeriodChange }) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--title)' }}>{title}</h2>
+      <PeriodToggle value={period} onChange={onPeriodChange} />
+    </div>
   );
 }
 
@@ -198,7 +229,8 @@ export default function CalculateurAutoEntrepreneur() {
   const [activite, setActivite] = useState('bnc');
   const [versementLiberatoire, setVersementLiberatoire] = useState(true);
   const [avecACRE, setAvecACRE] = useState(false);
-  const [moisACRE, setMoisACRE] = useState(10);
+  const [moisACRE, setMoisACRE] = useState(12);
+  const [showMoisACRE, setShowMoisACRE] = useState(false);
 
   const [mutuelle, setMutuelle] = useState(55);
   const [prevoyance, setPrevoyance] = useState(70);
@@ -210,6 +242,10 @@ export default function CalculateurAutoEntrepreneur() {
   const [newFraisNom, setNewFraisNom] = useState('');
   const [newFraisMontant, setNewFraisMontant] = useState('');
   const [newFraisPeriode, setNewFraisPeriode] = useState('mois');
+
+  const [periodeScenarios, setPeriodeScenarios] = useState('an');
+  const [periodeRepartition, setPeriodeRepartition] = useState('an');
+  const [periodeCharges, setPeriodeCharges] = useState('an');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -273,23 +309,31 @@ export default function CalculateurAutoEntrepreneur() {
 
   const pieData = [
     { name: 'Cotisations sociales', value: calculs.cotisations, color: colors.charges[0] },
-    { name: 'Imp\u00f4ts', value: calculs.impots, color: colors.charges[1] },
-    { name: 'Mutuelle', value: calculs.mutuelleAnnuelle, color: colors.charges[2] },
-    { name: 'Pr\u00e9voyance', value: calculs.prevoyanceAnnuelle, color: colors.charges[3] },
-    { name: 'RC Pro', value: calculs.rcPro, color: colors.charges[4] },
-    { name: 'CFE', value: calculs.cfe, color: colors.charges[5] },
-    { name: 'Frais pros', value: calculs.totalFrais, color: colors.charges[6] },
+    { name: 'CFP', value: calculs.cfp, color: colors.charges[1] },
+    { name: 'Imp\u00f4ts', value: calculs.impots, color: colors.charges[2] },
+    { name: 'Mutuelle', value: calculs.mutuelleAnnuelle, color: colors.charges[3] },
+    { name: 'Pr\u00e9voyance', value: calculs.prevoyanceAnnuelle, color: colors.charges[4] },
+    { name: 'RC Pro', value: calculs.rcPro, color: colors.charges[5] },
+    { name: 'CFE', value: calculs.cfe, color: colors.charges[6] },
+    { name: 'Frais pros', value: calculs.totalFrais, color: colors.charges[7] },
     { name: 'Net final', value: calculs.netFinal, color: colors.positive },
   ];
 
   const detailCharges = [
-    { label: `Cotisations sociales ${avecACRE ? '(avec ACRE)' : `(${(ACTIVITES[activite].tauxCotis * 100).toFixed(1).replace('.', ',')}%)`}`, value: calculs.cotisations, color: colors.charges[0] },
-    { label: `Imp\u00f4ts ${versementLiberatoire ? `(VL ${(ACTIVITES[activite].tauxVL * 100).toFixed(1).replace('.', ',')}%)` : '(IR)'}`, value: calculs.impots, color: colors.charges[1] },
-    { label: `Mutuelle (${mutuelle}\u20AC/mois)`, value: calculs.mutuelleAnnuelle, color: colors.charges[2] },
-    { label: `Pr\u00e9voyance (${prevoyance}\u20AC/mois)`, value: calculs.prevoyanceAnnuelle, color: colors.charges[3] },
-    { label: 'RC Pro', value: calculs.rcPro, color: colors.charges[4] },
-    { label: 'CFE', value: calculs.cfe, color: colors.charges[5] },
-    { label: 'Frais professionnels', value: calculs.totalFrais, color: colors.charges[6] },
+    { label: `Cotisations sociales (${
+        !avecACRE
+          ? `${(ACTIVITES[activite].tauxCotis * 100).toFixed(1).replace('.', ',')}%`
+          : (moisACRE >= 12 || moisACRE === '' || moisACRE == null)
+            ? `ACRE ${(ACTIVITES[activite].tauxCotisACRE * 100).toFixed(1).replace('.', ',')}%`
+            : `ACRE ${moisACRE}/12 mois, effectif ${((calculs.cotisations / (calculs.caAnnuel || 1)) * 100).toFixed(1).replace('.', ',')}%`
+      })`, value: calculs.cotisations, color: colors.charges[0] },
+    { label: `CFP (${(ACTIVITES[activite].tauxCFP * 100).toFixed(1).replace('.', ',')}%)`, value: calculs.cfp, color: colors.charges[1] },
+    { label: `Imp\u00f4ts ${versementLiberatoire ? `(VL ${(ACTIVITES[activite].tauxVL * 100).toFixed(1).replace('.', ',')}%)` : '(IR)'}`, value: calculs.impots, color: colors.charges[2] },
+    { label: `Mutuelle (${mutuelle}\u20AC/mois)`, value: calculs.mutuelleAnnuelle, color: colors.charges[3] },
+    { label: `Pr\u00e9voyance (${prevoyance}\u20AC/mois)`, value: calculs.prevoyanceAnnuelle, color: colors.charges[4] },
+    { label: 'RC Pro', value: calculs.rcPro, color: colors.charges[5] },
+    { label: 'CFE', value: calculs.cfe, color: colors.charges[6] },
+    { label: 'Frais professionnels', value: calculs.totalFrais, color: colors.charges[7] },
   ];
 
   const ajouterFrais = () => {
@@ -314,12 +358,14 @@ export default function CalculateurAutoEntrepreneur() {
     ['Versement lib\u00e9ratoire', versementLiberatoire ? `Oui (${(ACTIVITES[activite].tauxVL * 100).toFixed(1)}%)` : 'Non (IR bar\u00e8me progressif)'],
     ['Abattement forfaitaire', `${Math.round(ACTIVITES[activite].abattement * 100)}%`],
     ['Taux cotisations', `${(ACTIVITES[activite].tauxCotis * 100).toFixed(1)}%`],
+    ['Taux CFP', `${(ACTIVITES[activite].tauxCFP * 100).toFixed(1)}%`],
     ['ACRE', avecACRE ? `Oui (${moisACRE} mois, taux r\u00e9duit ${(ACTIVITES[activite].tauxCotisACRE * 100).toFixed(1)}%)` : 'Non'],
     [],
     ['R\u00c9SUM\u00c9 ANNUEL'],
     ['', 'Annuel', 'Mensuel'],
     ['Chiffre d\'affaires', Math.round(calculs.caAnnuel), Math.round(calculs.caMensuel)],
     ['Cotisations sociales', Math.round(calculs.cotisations), Math.round(calculs.cotisations / 12)],
+    ['CFP', Math.round(calculs.cfp), Math.round(calculs.cfp / 12)],
     ['Imp\u00f4ts', Math.round(calculs.impots), Math.round(calculs.impots / 12)],
     ['Total charges', Math.round(calculs.totalCharges), Math.round(calculs.totalCharges / 12)],
     ['Total frais', Math.round(calculs.totalFrais), Math.round(calculs.totalFrais / 12)],
@@ -329,6 +375,7 @@ export default function CalculateurAutoEntrepreneur() {
     ['D\u00c9TAIL CHARGES'],
     ['Poste', 'Annuel', 'Mensuel'],
     ['Cotisations sociales', Math.round(calculs.cotisations), Math.round(calculs.cotisations / 12)],
+    ['CFP', Math.round(calculs.cfp), Math.round(calculs.cfp / 12)],
     ['Imp\u00f4ts', Math.round(calculs.impots), Math.round(calculs.impots / 12)],
     ['Mutuelle', Math.round(calculs.mutuelleAnnuelle), mutuelle],
     ['Pr\u00e9voyance', Math.round(calculs.prevoyanceAnnuelle), prevoyance],
@@ -395,6 +442,12 @@ export default function CalculateurAutoEntrepreneur() {
               Calculateur Auto-Entrepreneur
             </h1>
             <p className="text-lg" style={{ color: 'var(--subtitle)' }}>Simule ton revenu net en temps r&eacute;el</p>
+            <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+              Bar&egrave;mes URSSAF &agrave; jour au 11/05/2026
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -566,9 +619,33 @@ export default function CalculateurAutoEntrepreneur() {
                 <span className="font-medium" style={{ color: 'var(--title)' }}>ACRE</span>
               </label>
               {avecACRE && (
-                <div className="mt-4 p-4 rounded-xl" style={{ background: 'var(--accent-light)' }}>
-                  <Label htmlFor="mois-acre">Nombre de mois avec ACRE</Label>
-                  <SmallInput id="mois-acre" value={moisACRE} onChange={(e) => setMoisACRE(e.target.value === '' ? '' : parseInt(e.target.value))} className="w-full" />
+                <div className="mt-3">
+                  {!showMoisACRE ? (
+                    <button
+                      onClick={() => setShowMoisACRE(true)}
+                      className="text-xs font-semibold underline underline-offset-2 cursor-pointer"
+                      style={{ color: 'var(--subtitle)' }}
+                    >
+                      Préciser le nombre de mois ACRE (par défaut&nbsp;: 12)
+                    </button>
+                  ) : (
+                    <div className="p-4 rounded-xl" style={{ background: 'var(--accent-light)' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="mois-acre">Mois avec ACRE sur 12</Label>
+                        <button
+                          onClick={() => { setShowMoisACRE(false); setMoisACRE(12); }}
+                          className="text-xs font-semibold cursor-pointer"
+                          style={{ color: 'var(--subtitle)' }}
+                        >
+                          Réinitialiser
+                        </button>
+                      </div>
+                      <SmallInput id="mois-acre" value={moisACRE} onChange={(e) => setMoisACRE(e.target.value === '' ? '' : parseInt(e.target.value))} className="w-full" />
+                      <p className="text-xs mt-2" style={{ color: 'var(--subtitle)' }}>
+                        Utile si tu démarres en cours d'année. Les mois sans ACRE basculent au taux plein.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </Card>
@@ -682,18 +759,18 @@ export default function CalculateurAutoEntrepreneur() {
 
             {/* Graphique barres */}
             <Card className="p-4 sm:p-6">
-              <CardTitle>Comparaison des sc&eacute;narios</CardTitle>
+              <ChartHeader title={'Comparaison des sc\u00E9narios'} period={periodeScenarios} onPeriodChange={setPeriodeScenarios} />
               <div className="h-[280px] sm:h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={scenarios} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                  <BarChart data={scenarios.map(s => periodeScenarios === 'mois' ? { ...s, ca: s.caMensuel, charges: s.charges / 12, net: s.netMensuel } : s)} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
                     <XAxis dataKey="label" stroke={colors.accent} style={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 13 }} />
-                    <YAxis stroke={colors.accent} style={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k\u20AC`} />
+                    <YAxis stroke={colors.accent} style={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 12 }} tickFormatter={(v) => periodeScenarios === 'mois' ? `${fmt(v)}\u20AC` : `${(v / 1000).toFixed(0)}k\u20AC`} />
                     <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={tooltipStyle} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} cursor={{ fill: `color-mix(in srgb, ${colors.accent} 5%, transparent)` }} />
                     <Legend wrapperStyle={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 13 }} iconType="circle" />
-                    <Bar dataKey="ca" name="CA annuel" fill={`url(#barCA-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="charges" name="Charges totales" fill={`url(#barCharges-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="net" name="Net annuel" fill={`url(#barNet-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="ca" name={periodeScenarios === 'mois' ? 'CA mensuel' : 'CA annuel'} fill={`url(#barCA-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="charges" name={periodeScenarios === 'mois' ? 'Charges mensuelles' : 'Charges totales'} fill={`url(#barCharges-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="net" name={periodeScenarios === 'mois' ? 'Net mensuel' : 'Net annuel'} fill={`url(#barNet-${dark ? 'd' : 'l'})`} radius={[6, 6, 0, 0]} />
                     <defs>
                       <linearGradient id={`barCA-${dark ? 'd' : 'l'}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={colors.barCA[0]} />
@@ -715,48 +792,65 @@ export default function CalculateurAutoEntrepreneur() {
 
             {/* Camembert */}
             <Card className="p-4 sm:p-6">
-              <CardTitle>R&eacute;partition du CA annuel</CardTitle>
-              <div className={isMobile ? '' : 'h-[350px]'} style={isMobile ? { height: 250 } : undefined}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} cx={isMobile ? '50%' : '40%'} cy="50%" labelLine={false} label={({ percent }) => percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} outerRadius={isMobile ? 85 : 110} innerRadius={isMobile ? 40 : 50} dataKey="value" style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>
-                      {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke={dark ? '#1f1f1f' : '#fffef9'} strokeWidth={2} />)}
-                    </Pie>
-                    <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={tooltipStyle} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} />
-                    {!isMobile && (
-                      <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle"
-                        wrapperStyle={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 13, paddingLeft: '20px' }}
-                        formatter={(value, entry) => {
-                          const total = pieData.reduce((s, i) => s + i.value, 0);
-                          const iv = entry.payload?.value || 0;
-                          const pct = total > 0 ? ((iv / total) * 100).toFixed(1) : '0';
-                          return <span style={{ color: dark ? '#ececec' : '#111' }}>{value} <span style={{ color: dark ? '#999' : '#555', fontSize: 12 }}>({pct}% &bull; {fmt(iv)}&euro;)</span></span>;
-                        }}
-                      />
-                    )}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              {isMobile && (
-                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                  {pieData.map((item) => {
-                    const total = pieData.reduce((s, i) => s + i.value, 0);
-                    const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
-                    return (
-                      <div key={item.name} className="flex items-center gap-2 text-xs">
-                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="truncate" style={{ color: 'var(--title)' }}>{item.name}</span>
-                        <span className="shrink-0 ml-auto" style={{ color: 'var(--subtitle)' }}>{pct}%</span>
+              <ChartHeader
+                title={periodeRepartition === 'mois' ? 'R\u00E9partition du CA mensuel' : 'R\u00E9partition du CA annuel'}
+                period={periodeRepartition}
+                onPeriodChange={setPeriodeRepartition}
+              />
+              {(() => {
+                const pieDataDisplay = periodeRepartition === 'mois'
+                  ? pieData.map(p => ({ ...p, value: p.value / 12 }))
+                  : pieData;
+                return (
+                  <>
+                    <div className={isMobile ? '' : 'h-[350px]'} style={isMobile ? { height: 250 } : undefined}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pieDataDisplay} cx={isMobile ? '50%' : '40%'} cy="50%" labelLine={false} label={({ percent }) => percent >= 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} outerRadius={isMobile ? 85 : 110} innerRadius={isMobile ? 40 : 50} dataKey="value" style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>
+                            {pieDataDisplay.map((entry, i) => <Cell key={i} fill={entry.color} stroke={dark ? '#1f1f1f' : '#fffef9'} strokeWidth={2} />)}
+                          </Pie>
+                          <Tooltip formatter={(v) => `${fmt(v)}\u20AC`} contentStyle={tooltipStyle} itemStyle={tooltipTextStyle} labelStyle={tooltipTextStyle} />
+                          {!isMobile && (
+                            <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle"
+                              wrapperStyle={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: 13, paddingLeft: '20px' }}
+                              formatter={(value, entry) => {
+                                const total = pieDataDisplay.reduce((s, i) => s + i.value, 0);
+                                const iv = entry.payload?.value || 0;
+                                const pct = total > 0 ? ((iv / total) * 100).toFixed(1) : '0';
+                                return <span style={{ color: dark ? '#ececec' : '#111' }}>{value} <span style={{ color: dark ? '#999' : '#555', fontSize: 12 }}>({pct}% &bull; {fmt(iv)}&euro;)</span></span>;
+                              }}
+                            />
+                          )}
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {isMobile && (
+                      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {pieDataDisplay.map((item) => {
+                          const total = pieDataDisplay.reduce((s, i) => s + i.value, 0);
+                          const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
+                          return (
+                            <div key={item.name} className="flex items-center gap-2 text-xs">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                              <span className="truncate" style={{ color: 'var(--title)' }}>{item.name}</span>
+                              <span className="shrink-0 ml-auto" style={{ color: 'var(--subtitle)' }}>{pct}%</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </>
+                );
+              })()}
             </Card>
 
             {/* D\u00e9tail charges */}
             <Card>
-              <CardTitle>D&eacute;tail des charges annuelles</CardTitle>
+              <ChartHeader
+                title={periodeCharges === 'mois' ? 'D\u00e9tail des charges mensuelles' : 'D\u00e9tail des charges annuelles'}
+                period={periodeCharges}
+                onPeriodChange={setPeriodeCharges}
+              />
               <div className="space-y-3">
                 {detailCharges.map(({ label, value, color }) => (
                   <div key={label} className="flex justify-between items-center py-2.5 px-3 rounded-lg transition-colors" style={{ borderBottom: `1px solid var(--card-border)` }}>
@@ -764,12 +858,12 @@ export default function CalculateurAutoEntrepreneur() {
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
                       <span className="font-medium" style={{ color: 'var(--title)' }}>{label}</span>
                     </div>
-                    <span className="font-bold" style={{ color: 'var(--title)' }}>{fmt(value)}&euro;</span>
+                    <span className="font-bold" style={{ color: 'var(--title)' }}>{fmt(periodeCharges === 'mois' ? value / 12 : value)}&euro;</span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center py-4 rounded-xl px-4 mt-4" style={{ background: 'var(--accent-light)' }}>
                   <span className="font-bold text-lg" style={{ color: 'var(--title)' }}>TOTAL</span>
-                  <span className="font-bold text-xl" style={{ color: 'var(--accent)' }}>{fmt(calculs.totalCharges + calculs.totalFrais)}&euro;</span>
+                  <span className="font-bold text-xl" style={{ color: 'var(--accent)' }}>{fmt(periodeCharges === 'mois' ? (calculs.totalCharges + calculs.totalFrais) / 12 : (calculs.totalCharges + calculs.totalFrais))}&euro;</span>
                 </div>
               </div>
             </Card>
